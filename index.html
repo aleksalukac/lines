@@ -1,0 +1,602 @@
+<!DOCTYPE HTML>
+<!--
+	Dimension by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+			<title>Lines</title>     
+			<link rel="shortcut icon" href="logo.png" /> 
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" type="text/css" href="style.css"> 
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+		<style>
+				.slidecontainer {
+				  width: 100%;
+				}
+				
+				.slider {
+				  -webkit-appearance: none;
+				  width: 100%;
+				  height: 15px;
+				  border-radius: 5px;
+				  background: #d3d3d3;
+				  outline: none;
+				  opacity: 0.7;
+				  -webkit-transition: .2s;
+				  transition: opacity .2s;
+				}
+				
+				.slider:hover {
+				  opacity: 1;
+				}
+				
+				.slider::-webkit-slider-thumb {
+				  -webkit-appearance: none;
+				  appearance: none;
+				  width: 25px;
+				  height: 25px;
+				  border-radius: 50%;
+				  background: #4CAF50;
+				  cursor: pointer;
+				}
+				
+				.slider::-moz-range-thumb {
+				  width: 25px;
+				  height: 25px;
+				  border-radius: 50%;
+				  background: #4CAF50;
+				  cursor: pointer;
+				}
+				</style>   
+<script>
+	//setup(6);
+	var boardSize = 10;
+	var end = false;
+	var startTime;
+
+	var ballPositionX;
+	var ballPositionY;
+	var activeBall = false;
+
+	var movesPlayer = 0;
+
+	var toWin = 5;
+
+	var score = 0;
+
+	var setuped = false;
+
+	var matrix = [];
+	
+	var randomBallsCount = 3;
+
+	var colors = ["yellow", "white", "red", "green", "brown", "pink"];
+
+	var freeSpaces = boardSize * boardSize;
+
+	var activeColor;
+
+	function getRandomInt(min, max) {
+		min = Math.ceil(min);
+		max = Math.floor(max);
+   		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	function addRandomBalls()
+	{
+		if(end) return;
+
+		if(freeSpaces < 3) 
+		{
+			//end = true;
+			newGame();
+			return;
+		}
+		freeSpaces -= 3;
+		for(var i = 0; i < randomBallsCount; i++)
+		{
+			var x,y;
+			do
+			{
+				x = getRandomInt(0,boardSize-1);
+				y = getRandomInt(0,boardSize-1);
+			} while(matrix[x][y] != 0);
+
+			var color = getRandomInt(0,colors.length - 1);
+
+			matrix[x][y] = color + 1;
+			document.getElementById(x.toString() + y.toString()).src = colors[color] + ".png";
+
+		}
+	}
+
+	function newGame()
+	{
+		score = 0;
+		setupBoard();
+	}
+
+	function setup()
+	{	
+
+		//boardSize = 9;
+		for(var i=0; i < boardSize; i++) 
+		{
+			matrix[i] = [];
+
+			for(var j=0; j < boardSize; j++) {
+				matrix[i][j] = 0;
+			}   
+		}
+
+		addRandomBalls();
+	}
+
+	function setBall(i,j, previ = ballPositionX, prevj = ballPositionY)
+	{
+		document.getElementById(previ.toString() + prevj.toString()).src = "p.png";
+		matrix[previ][prevj] = 0;
+		document.getElementById(i.toString() + j.toString()).src = colors[activeColor] + ".png";
+		matrix[i][j] = activeColor + 1;
+		ballPositionX = i;
+		ballPositionY = j;
+	}
+
+	function max(a,b) { if(a > b) return a; return b;}
+	function min(a,b) { if(a < b) return a; return b;}
+
+	function copyMatrix()
+	{
+		dfsBoard = [];
+		for(var i = 0; i < boardSize; i++)
+		{
+			dfsBoard[i] = [];
+			dfsChecked[i] = [];
+			for(var j = 0; j < boardSize; j++)
+			{
+				dfsBoard[i][j] = 300;
+				dfsChecked[i][j] = false;
+			}
+		}
+		dfsBoard[ballPositionX][ballPositionY] = 0;
+		dfsChecked[ballPositionX][ballPositionY] = true;
+		dfsList = [];
+	}
+
+	var dfsList = [];
+	var neighbourX = [1,0,-1,0];
+	var neighbourY = [0,1,0,-1];
+	var dfsBoard = [];
+	var dfsChecked = [];
+
+	function addNeighbours(i, j, level)
+	{
+		for(var k = 0; k < 4; k++)
+		{
+			if(validCoord(i + neighbourX[k], j + neighbourY[k]) && !dfsChecked[i + neighbourX[k]][j + neighbourY[k]] && matrix[i + neighbourX[k]][j + neighbourY[k]] == 0)
+			{
+				dfsList.push([i + neighbourX[k], j + neighbourY[k]]);
+				dfsBoard[i + neighbourX[k]][j + neighbourY[k]] = level;
+				dfsChecked[i + neighbourX[k]][j + neighbourY[k]] = true;
+			}
+		}
+	}
+
+	function findWay(x,y)
+	{
+		if(matrix[x][y] != 0) return false;
+		copyMatrix();
+		
+		dfsChecked[ballPositionX][ballPositionY] = true;
+		addNeighbours(ballPositionX, ballPositionY, 1);
+		
+		while(dfsList.length > 0)
+		{
+			var x_temp = dfsList[0][0];
+			var y_temp = dfsList[0][1];
+			dfsList.shift();
+
+			addNeighbours(x_temp, y_temp, dfsBoard[x_temp][y_temp] + 1);
+
+			if(x_temp == x && y_temp == y) return true; 
+		}
+
+		dfsBoard = [];
+		return false;
+	}
+
+	function minNeighbour(x,y)
+	{
+		var min = 800;
+		var minMove = [1,0];
+		for(var k = 0; k < 4; k++)
+		{
+			if(validCoord(x + neighbourX[k], y + neighbourY[k]) && dfsBoard[x + neighbourX[k]][y + neighbourY[k]] < min)
+			{
+				min = dfsBoard[x + neighbourX[k]][y + neighbourY[k]];
+				minMove = [neighbourX[k], neighbourY[k]];
+			}
+		}
+		return minMove;
+	}
+
+	var Moves = [];
+
+	var listToDelete = [];
+	var listStrike = [];
+
+	function checkVertical() 
+	{
+		for(var i = 0; i < boardSize; i++)
+		{
+			listStrike = [];
+			var prev = matrix[0][i];
+			var sum = 1;
+
+			listStrike.push([0,i]);
+			for(var j = 1; j < boardSize; j++)
+			{
+				if(prev == matrix[j][i])
+				{
+					sum++;
+					listStrike.push([j,i]);
+				}
+				else
+				{
+					if(sum >= toWin && prev != 0)
+					{
+						listToDelete.push(listStrike);
+					}
+
+					sum = 1;
+					prev = matrix[j][i];
+					listStrike = [];
+					listStrike.push([j,i]);
+				}
+			}
+			if(sum >= toWin && prev != 0)
+			{
+				listToDelete.push(listStrike);
+			}
+		}
+	}
+
+	function checkHorizontal() {
+		for(var i = 0; i < boardSize; i++)
+		{
+			listStrike = [];
+			var prev = matrix[i][0];
+			var sum = 1;
+			listStrike.push([i,0]);
+			for(var j = 1; j < boardSize; j++)
+			{
+				if(prev == matrix[i][j])
+				{
+					sum++;
+					listStrike.push([i,j]);
+				}
+				else
+				{
+					if(sum >= toWin && prev != 0)
+					{
+						listToDelete.push(listStrike);
+					}
+
+					sum = 1;
+					prev = matrix[i][j];
+					listStrike = [];
+					listStrike.push([i,j]);
+				}
+			}
+			if(sum >= toWin && prev != 0)
+			{
+				listToDelete.push(listStrike);
+			}
+		}
+		return 0;
+	}
+
+	function checkDiagonal() {
+		for(var i = -boardSize; i < boardSize; i++)
+		{
+			listStrike = [];
+			var j = 0;
+			var prev = 0;
+			var sum = 0;
+			for(var l = 0; l < boardSize; l++)
+			{
+				if(validCoord(i + l, j + l))
+
+				if(prev == matrix[i + l][j + l])
+				{
+					sum++;
+					listStrike.push([i + l, j + l]);
+				}
+				else
+				{
+					if(sum >= toWin && prev != 0)
+					{
+						listToDelete.push(listStrike);
+					}
+					listStrike = [];
+					listStrike.push([i + l,j + l]);
+					sum = 1;
+					prev = matrix[i + l][j + l];
+				}
+			}
+			if(sum >= toWin && prev != 0)
+			{
+				listToDelete.push(listStrike);
+			}
+		}
+
+		for(var i = -boardSize; i < boardSize; i++)
+		{
+			listStrike = [];
+			var j = boardSize - 1;
+			var prev = 0;
+			var sum = 0;
+			for(var l = 0; l < boardSize; l++)
+			{
+				if(validCoord(i + l, j - l))
+
+				if(prev == matrix[i + l][j - l])
+				{
+					sum++;
+					listStrike.push([i + l, j - l]);
+				}
+				else
+				{
+					if(sum >= toWin && prev != 0)
+					{
+						listToDelete.push(listStrike);
+					}
+					winningStreak = [];
+					listStrike = [];
+					listStrike.push([i + l,j - l]);
+					sum = 1;
+					prev = matrix[i + l][j - l];
+				}
+			}
+			if(sum >= toWin && prev != 0)
+			{
+				listToDelete.push(listStrike);
+			}
+		}
+		
+		return 0;
+	}
+
+	function deleteBalls()
+	{
+		for(var i = 0; i < listToDelete.length; i++)
+		{
+			for(var j = 0; j < listToDelete[i].length; j++)
+			{
+				var x = listToDelete[i][j][0];
+				var y = listToDelete[i][j][1];
+				matrix[x][y] = 0;
+				document.getElementById(x.toString() + y.toString()).src = "p.png";
+			}
+		}
+		listToDelete = [];
+	}
+
+	function endTurn()
+	{
+		listStrike = [];
+		listToDelete = [];
+		checkVertical();
+		checkHorizontal();
+		checkDiagonal();
+
+		if(listToDelete.length > 0)
+		{
+			for(var i = 0; i < listToDelete.length; i++)
+			{
+				var k = listToDelete[i].length;
+				score += k + max(k - 5, 0);
+			}
+			deleteBalls();
+		}
+		else
+		{
+			addRandomBalls();
+			listStrike = [];
+			listToDelete = [];
+			checkVertical();
+			checkHorizontal();
+			checkDiagonal();
+			if(listToDelete.length > 0)
+			{
+				deleteBalls();
+			}
+		}
+		document.getElementById("score").innerHTML = score.toString();
+	}
+
+	var speed = 50;
+
+	function slowMove()
+	{
+		if(Moves.length == 0) endTurn();
+		setBall(ballPositionX - Moves[Moves.length - 1][0], ballPositionY - Moves[Moves.length - 1][1]);
+		Moves.pop();
+		setTimeout(function() { slowMove()}, speed);
+	}
+
+	function moveBall(x,y)
+	{
+		var i = x;
+		var j = y;
+		Moves = [];
+		while( !(i == ballPositionX && j == ballPositionY))
+		{
+			var moveNext = minNeighbour(i, j);
+			i += moveNext[0];
+			j += moveNext[1];
+			Moves.push(moveNext);
+			//setBall(i, j);
+		}
+		slowMove();
+		/*for(var k = Moves.length - 1; k >= 0; k--)
+		{
+			//console.log("Spreman");
+			slowMove();
+			//setBall(ballPositionX - Moves[k][0], ballPositionY - Moves[k][1]);
+		}*/
+	}
+
+	function play(x, y)
+	{   
+		if(end) return;
+
+		activeBall = !activeBall;
+		if(activeBall)
+		{
+			if(matrix[x][y] == 0) { activeBall = !activeBall; return; }
+			ballPositionX = x;
+			ballPositionY = y;
+			activeColor = matrix[x][y] - 1;
+			document.getElementById(x.toString() + y.toString()).style = "border-color: #b80f0f;"
+		}
+		else
+		{
+			if(matrix[x][y] != 0)
+			{
+				document.getElementById(ballPositionX.toString() + ballPositionY.toString()).style = "border-color: #ffffff;"
+				return;
+			}
+			if(!findWay(x,y))
+			{
+				document.getElementById(ballPositionX.toString() + ballPositionY.toString()).style = "border-color: #ffffff;"
+				return;
+			}
+			document.getElementById(ballPositionX.toString() + ballPositionY.toString()).style = "border-color: #ffffff;"
+			moveBall(x,y);
+		}
+		/*if(opstacle)
+		{
+			if(matrix[x][y] == 0)
+			{
+				matrix[x][y] = -1;
+				document.getElementById(x.toString() + y.toString()).src = "x.png";
+			}
+			else if (matrix [x][y] == -1)
+			{
+				matrix[x][y] = 0;
+				document.getElementById(x.toString() + y.toString()).src = "p.png";
+			}
+			return;
+		}*/
+		
+		return;
+	}
+
+	function doCoolFalling(column, place, color, i = 5) {
+		if(place == 5) {
+			document.getElementById((column * 10 + 5).toString()).style.backgroundColor = color; 
+			return;  
+		}
+		if(i < place) return;
+
+		if(i + 1 <= 5)
+			{
+				document.getElementById((column*10 + i+1).toString()).style.backgroundColor = neutralColor; 
+			}
+
+		document.getElementById((column * 10 + i).toString()).style.backgroundColor = color;   
+
+		setTimeout(function() { doCoolFalling(column,place,color,i-1)}, 120);
+	}
+
+	function setupBoard(size)
+	{
+		size = boardSize;
+		document.getElementById("nesto").innerHTML = "";
+		//boardSize = size;
+		for(var i = 0; i < size; i++)
+		{
+			for(var j = 0; j < size; j++)
+			{
+				document.getElementById("nesto").innerHTML += '<img src="p.png" onclick="play(' + i.toString() + ',' + j.toString() + ')" type="submit" class="button2" width="50" height="50" id="' + i.toString() + j.toString() + '" > </button>'; 
+				//<img src="p.png" div onmousedown="play(0,0)" type="submit" class="button2" width="50" height="50" id="00" > </button>
+			}
+			document.getElementById("nesto").innerHTML += '<br>';
+		}
+		setup();
+		
+		document.getElementById("score").innerHTML = score.toString();
+	}
+	
+	function validCoord(x,y)
+	{
+		if(x >= 0 && x < boardSize && y >= 0 && y < boardSize) return true;
+		return false;
+	}
+
+</script>
+	</head>
+	<body onload="setupBoard()" class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+							<div>
+							<img src="logo.png" width = 50px />
+							</div>
+						<div class="content">
+							<div class="inner">
+								<h3>Score:</h3>
+								<h3><div id="score"></div></h3><br>
+								<div id="nesto"></div><br><br>
+								<div id="cong" ></div>
+
+								
+										<button onclick="newGame()" type="submit"  width="600" value="New game">New game</button>
+										<!--button onclick="activateOpstacle()" type="submit"  width="600" value="New game">Opstacle</button-->
+									
+							  </div>   
+							  <hr>   
+							  <div class="w3-black" id="tour">
+								<div class="w3-container w3-content w3-padding-64" style="max-width:800px">
+									
+									<h1 class="w3-wide w3-center"><img src="logo.png" width = 80></h2>
+								  <h1 class="w3-wide w3-center">Lines</h2>
+								  <h3 style="text-align: justify;
+								  text-justify: inter-word;" >The objective is to score as many points as possible by making balls of one color form various lines. 
+								  First select the ball to be moved, then an empty destination square. If the destination square is occupied by another ball, 
+								  that ball is now selected to be moved. Note that you cannot always place the
+								   ball where you'd want to. After you move a ball, three more appear, except when you formed a line. 
+								   The more balls in a shape, the more points you score for making it.
+ <br>
+								 
+								</div>
+						</div>
+					</header>
+
+
+				<!-- Footer -->
+					<footer id="footer">
+							<i class=""><img src="http://www.aleksa.lukac.rs/img/logo.png" width=50/></i> 
+							<p class="w3-medium"><a href="https://aleksa.lukac.rs" target="_blank">aleksa.lukac.rs</a></p> 
+					</footer>
+
+			</div>
+
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
