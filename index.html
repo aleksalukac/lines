@@ -54,7 +54,7 @@
 				</style>   
 <script>
 	//setup(6);
-	var boardSize = 10;
+	var boardSize = 9;
 	var end = false;
 	var startTime;
 
@@ -116,6 +116,7 @@
 
 	function newGame()
 	{
+		freeSpaces = boardSize * boardSize;
 		score = 0;
 		setupBoard();
 	}
@@ -123,6 +124,7 @@
 	function setup()
 	{	
 
+		freeSpaces = boardSize * boardSize;
 		//boardSize = 9;
 		for(var i=0; i < boardSize; i++) 
 		{
@@ -381,6 +383,7 @@
 				var y = listToDelete[i][j][1];
 				matrix[x][y] = 0;
 				document.getElementById(x.toString() + y.toString()).src = "p.png";
+				freeSpaces++;
 			}
 		}
 		listToDelete = [];
@@ -423,7 +426,10 @@
 
 	function slowMove()
 	{
-		if(Moves.length == 0) endTurn();
+		if(Moves.length == 0) {
+			endTurn();
+			return;
+		}
 		setBall(ballPositionX - Moves[Moves.length - 1][0], ballPositionY - Moves[Moves.length - 1][1]);
 		Moves.pop();
 		setTimeout(function() { slowMove()}, speed);
