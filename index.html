@@ -416,6 +416,11 @@
 			checkDiagonal();
 			if(listToDelete.length > 0)
 			{
+				for(var i = 0; i < listToDelete.length; i++)
+				{
+					var k = listToDelete[i].length;
+					score += k + max(k - 5, 0);
+				}
 				deleteBalls();
 			}
 		}
