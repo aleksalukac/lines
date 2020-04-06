@@ -424,6 +424,8 @@
 				deleteBalls();
 			}
 		}
+		if(freeSpaces == 0)
+			newGame();
 		document.getElementById("score").innerHTML = score.toString();
 	}
 
